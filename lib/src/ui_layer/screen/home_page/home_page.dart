@@ -1,11 +1,16 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:girman_technology/src/bussiness_layer/provider/firebase_storage_provider.dart';
+import 'package:girman_technology/src/data_layer/models/users_response_model.dart';
 import 'package:girman_technology/src/data_layer/res/colors.dart';
 import 'package:girman_technology/src/data_layer/res/style.dart';
 import 'package:girman_technology/src/data_layer/res/text_style.dart';
 import 'package:girman_technology/src/ui_layer/widget/common_text_field.dart';
 import 'package:girman_technology/src/ui_layer/widget/custom_app_bar_widget.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,34 +20,36 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  late FirebaseStorageProvider _firebaseStorageProvider;
+  final FocusNode _focusNode = FocusNode();
+ final TextEditingController _searchController=TextEditingController();
+
   @override
   void initState() {
+    _firebaseStorageProvider = context.read<FirebaseStorageProvider>();
+    SchedulerBinding.instance.addPostFrameCallback((duration) {
+      _firebaseStorageProvider.fetchUsersData();
+    });
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBarWidget(),
+      appBar:  CustomAppBarWidget(
+        onSearchTap: (){
+          FocusScope.of(context).requestFocus(_focusNode);
+        },
+      ),
       body: _getBody(),
     );
   }
 
   Widget _getBody() {
     return Container(
-      decoration: BoxDecoration(
+      decoration:  BoxDecoration(
         gradient: AppStyle.homePageGradient,
       ),
-      child: Column(
-        children: [
-          _getBodyWidgets(),
-        ],
-      ),
-    );
-  }
-
-  Widget _getBodyWidgets() {
-    return Expanded(
       child: Column(
         children: [
           AppStyle.sbHeight109,
@@ -63,17 +70,27 @@ class _HomePageState extends State<HomePage> {
           ),
           AppStyle.sbHeight28,
           _getSearchWidget(),
-          AppStyle.sbHeight15,
           _getUsersList(),
         ],
       ),
     );
   }
 
+
   Widget _getSearchWidget() {
     return Padding(
       padding: AppStyle.pdH28,
       child: CommonTextField(
+        onTapOutside: (pointerDownEvent){
+          FocusManager.instance.primaryFocus?.unfocus();
+          _firebaseStorageProvider.searchUsers(_searchController.text.trim());
+        },
+        focusNode: _focusNode,
+        onFieldSubmitted: (val) {
+          _firebaseStorageProvider.searchUsers(_searchController.text.trim());
+        },
+        controller: _searchController,
+        textInputAction: TextInputAction.search,
         hintText: "Search",
         prefixWidget: IconButton(
           onPressed: () {},
@@ -84,20 +101,25 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _getUsersList() {
-    return Expanded(
-      child: ListView.separated(
-        padding: AppStyle.pdH50V15,
-        shrinkWrap: true,
-        separatorBuilder: (context, index) => SizedBox(
-          height: 27.h,
-        ),
-        itemCount: 5,
-        itemBuilder: (context, index) => _getUserDataCard(),
-      ),
+    return Consumer<FirebaseStorageProvider>(
+      builder: (context, provider, child) {
+        return Expanded(
+          child: ListView.separated(
+            padding: AppStyle.pdH50V15,
+            shrinkWrap: true,
+            separatorBuilder: (context, index) => SizedBox(
+              height: 27.h,
+            ),
+            itemCount: provider.usersList.length,
+            itemBuilder: (context, index) =>
+                _getUserDataCard(provider.usersList[index]),
+          ),
+        );
+      },
     );
   }
 
-  Widget _getUserDataCard() {
+  Widget _getUserDataCard(Users data) {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: 20.75.w,
@@ -131,16 +153,26 @@ class _HomePageState extends State<HomePage> {
                 color: AppColors.colf3f,
               ),
             ),
-            height: 67.45.h,
-            width: 67.45.h,
-            child: Image.asset("assets/images/profile.png"),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(40),
+              child: CachedNetworkImage(
+                fit: BoxFit.cover,
+                height: 67.45.h,
+                width: 67.45.h,
+                placeholder: (context, url) =>
+                    const CircularProgressIndicator(),
+                errorWidget: (context, url, error) => const Icon(Icons.error),
+                imageUrl: data.profileImage ?? "",
+              ),
+            ),
           ),
           SizedBox(
             height: 6.92.h,
           ),
           Text(
-            "Anjali Sharma",
+            data.name ?? "",
             style: AppTextStyles.inter28W600,
+            overflow: TextOverflow.ellipsis,
           ),
           SizedBox(
             height: 7.54.h,
@@ -152,7 +184,7 @@ class _HomePageState extends State<HomePage> {
                 width: 6.92.w,
               ),
               Text(
-                "Mumbai",
+                data.location ?? "",
                 style: AppTextStyles.inter13W500.copyWith(
                   fontSize: 8.65.sp,
                   color: AppColors.col425,
@@ -181,7 +213,7 @@ class _HomePageState extends State<HomePage> {
                         width: 5.92.w,
                       ),
                       Text(
-                        "90999 80888",
+                        data.contactNumber ?? "",
                         style: AppTextStyles.inter28W600.copyWith(
                           fontSize: 10.38.sp,
                           color: AppColors.col000,
@@ -203,7 +235,7 @@ class _HomePageState extends State<HomePage> {
               ),
               const Spacer(),
               GestureDetector(
-                onTap: fetchUserDetails,
+                onTap: () => fetchUserDetails(data),
                 child: Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: 13.84.w,
@@ -229,7 +261,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void fetchUserDetails() {
+  void fetchUserDetails(Users data) {
     showDialog(
       context: context,
       builder: (context) {
@@ -295,19 +327,19 @@ class _HomePageState extends State<HomePage> {
                     height: 14.81.h,
                   ),
                   Text(
-                    "Name: Anjali Sharma",
+                    "Name: ${data.name}",
                     style: AppTextStyles.inter13W500.copyWith(
                       color: AppColors.col090,
                     ),
                   ),
                   Text(
-                    "Location: Mumbai",
+                    "Location: ${data.location}",
                     style: AppTextStyles.inter13W500.copyWith(
                       color: AppColors.col090,
                     ),
                   ),
                   Text(
-                    "Contact Number: 9918893873",
+                    "Contact Number: ${data.contactNumber}",
                     style: AppTextStyles.inter13W500.copyWith(
                       color: AppColors.col090,
                     ),
@@ -315,11 +347,16 @@ class _HomePageState extends State<HomePage> {
                   SizedBox(
                     height: 14.81.h,
                   ),
-                  Image.asset(
-                    "assets/images/full_profile_img.png",
+                  CachedNetworkImage(
+                    placeholder: (context, url) =>
+                        const CircularProgressIndicator(),
+                    errorWidget: (context, url, error) =>
+                        const Icon(Icons.error),
+                    imageUrl: data.profileImage ?? "",
                     height: 191.h,
                     width: 191.w,
-                  ),
+                    fit: BoxFit.cover,
+                  )
                 ],
               ),
             ),

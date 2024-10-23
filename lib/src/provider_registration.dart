@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:girman_technology/src/bussiness_layer/provider/firebase_storage_provider.dart';
 import 'package:girman_technology/src/bussiness_layer/provider/header_menu_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
@@ -10,7 +11,10 @@ class ProviderRegistration {
       ChangeNotifierProvider<HeaderMenuProvider>(
         lazy: true,
         create: (context) => HeaderMenuProvider(),
-      )
+      ),ChangeNotifierProvider<FirebaseStorageProvider>(
+        lazy: true,
+        create: (context) => FirebaseStorageProvider(),
+      ),
     ];
   }
 }

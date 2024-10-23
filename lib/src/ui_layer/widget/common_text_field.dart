@@ -39,6 +39,7 @@ class CommonTextField extends StatelessWidget {
   final TextStyle? style;
   final int minLines;
   final double? borderWidth;
+  final void Function(PointerDownEvent)? onTapOutside;
 
   const CommonTextField({
     super.key,
@@ -75,11 +76,13 @@ class CommonTextField extends StatelessWidget {
     this.style,
     this.minLines = 1,
     this.borderWidth,
+    this.onTapOutside,
   });
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      onTapOutside:onTapOutside,
       cursorColor: AppColors.col000,
       autofocus: autoFocus,
       enabled: isEnable,
@@ -105,7 +108,7 @@ class CommonTextField extends StatelessWidget {
         hintText: hintText,
         hintStyle:
             hintStyle ?? AppTextStyles.inter13W500.copyWith(fontSize: 16.sp),
-        errorMaxLines: 3,
+        errorMaxLines: 0,
         fillColor: fillColor,
         contentPadding: contentPadding ?? AppStyle.pdH20,
         counterText: showCounter ? null : '',

@@ -9,7 +9,12 @@ import 'package:url_launcher/url_launcher.dart';
 
 class CustomAppBarWidget extends StatelessWidget
     implements PreferredSizeWidget {
-  const CustomAppBarWidget({super.key});
+  final void Function() onSearchTap;
+
+  const CustomAppBarWidget({
+    super.key,
+    required this.onSearchTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +66,7 @@ class CustomAppBarWidget extends StatelessWidget
             offset: Offset(0, 25.h),
             itemBuilder: (BuildContext context) {
               return [
-                _gePopUpMenuItem(item: "SEARCH", onTap: () {}),
+                _gePopUpMenuItem(item: "SEARCH", onTap: onSearchTap),
                 _gePopUpMenuItem(
                     item: "WEBSITE",
                     onTap: () {
@@ -104,12 +109,13 @@ class CustomAppBarWidget extends StatelessWidget
     final Uri emailLaunchUri = Uri(
       scheme: 'mailto',
       path: 'contact@girmantech.com',
-      query: 'subject=Flutter Developer Application&body=I am a mobile application developer with over 2 years of experience specializing in Flutter technology.\n\nI have 2 years and 2 months of experience as a Flutter developer, working on various projects both in teams and independently. My expertise includes creating hybrid mobile applications with rich user experiences, working closely with backend teams to integrate RESTful APIs for seamless data flow to the client, and deploying apps to both the Play Store and the App Store.',
+      query:
+          'subject=Flutter Developer Application&body=I am a mobile application developer with over 2 years of experience specializing in Flutter technology.\n\nI have 2 years and 2 months of experience as a Flutter developer, working on various projects both in teams and independently. My expertise includes creating hybrid mobile applications with rich user experiences, working closely with backend teams to integrate RESTful APIs for seamless data flow to the client, and deploying apps to both the Play Store and the App Store.',
     );
 
     if (await canLaunchUrl(emailLaunchUri)) {
-      await launchUrl(emailLaunchUri,
-
+      await launchUrl(
+        emailLaunchUri,
       );
     } else {
       throw 'Could not launch email app';
